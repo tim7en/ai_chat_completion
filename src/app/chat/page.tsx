@@ -25,8 +25,17 @@ interface Message {
   model?: string
 }
 
+interface ChatHistory {
+  id: string
+  title: string
+  messages: any[]
+  model: string
+  createdAt: string
+  updatedAt: string
+}
+
 export default function ChatPage() {
-  const { data: session, status } = useSession()
+  const { data: session, status, update } = useSession()
   const router = useRouter()
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
@@ -34,6 +43,9 @@ export default function ChatPage() {
   const [chatId, setChatId] = useState<string | null>(null)
   const [showPaywall, setShowPaywall] = useState(false)
   const [selectedModel, setSelectedModel] = useState<AIModel>(aiModels[0])
+  const [chatHistory, setChatHistory] = useState<ChatHistory[]>([])
+  const [loadingHistory, setLoadingHistory] = useState(false)
+  const [currentCredits, setCurrentCredits] = useState(session?.user?.credits || 0)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -43,11 +55,89 @@ export default function ChatPage() {
   }, [status, router])
 
   useEffect(() => {
+    if (session) {
+      setCurrentCredits(session.user.credits)
+      fetchChatHistory()
+    }
+  }, [session])
+
+  useEffect(() => {
     scrollToBottom()
   }, [messages])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }
+
+  const fetchChatHistory = async () => {
+    setLoadingHistory(true)
+    try {
+      const response = await fetch("/api/chats")
+      if (response.ok) {
+        const data = await response.json()
+        setChatHistory(data.chats || [])
+      }
+    } catch (error) {
+      console.error("Failed to fetch chat history:", error)
+    } finally {
+      setLoadingHistory(false)
+    }
+  }
+
+  const loadChat = async (selectedChatId: string) => {
+    try {
+      const response = await fetch(`/api/chats/${selectedChatId}`)
+      if (response.ok) {
+        const data = await response.json()
+        const chat = data.chat
+        
+        setChatId(chat.id)
+        
+        // Convert stored messages to UI format
+        const convertedMessages = Array.isArray(chat.messages) 
+          ? chat.messages.map((msg: any, index: number) => ({
+              id: `${chat.id}-${index}`,
+              role: msg.role,
+              content: msg.content,
+              timestamp: new Date(msg.timestamp || chat.createdAt),
+              model: chat.model
+            }))
+          : []
+        
+        setMessages(convertedMessages)
+        
+        // Update selected model if different
+        const chatModel = aiModels.find(m => m.id === chat.model)
+        if (chatModel) {
+          setSelectedModel(chatModel)
+        }
+      }
+    } catch (error) {
+      toast.error("Failed to load chat")
+    }
+  }
+
+  const deleteChat = async (chatIdToDelete: string) => {
+    try {
+      const response = await fetch(`/api/chats/${chatIdToDelete}`, {
+        method: "DELETE"
+      })
+      
+      if (response.ok) {
+        toast.success("Chat deleted")
+        setChatHistory(prev => prev.filter(chat => chat.id !== chatIdToDelete))
+        
+        // If this was the current chat, start a new one
+        if (chatId === chatIdToDelete) {
+          startNewChat()
+        }
+      } else {
+        toast.error("Failed to delete chat")
+      }
+    } catch (error) {
+      toast.error("Failed to delete chat")
+    }
+  }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -62,7 +152,7 @@ export default function ChatPage() {
     const requiredCredits = selectedModel.creditsPerMessage
 
     // Check if user has enough credits or is subscribed
-    if (session.user.credits < requiredCredits && !session.user.isSubscribed) {
+    if (currentCredits < requiredCredits && !session.user.isSubscribed) {
       setShowPaywall(true)
       return
     }
@@ -112,10 +202,16 @@ export default function ChatPage() {
         setChatId(data.chatId)
       }
 
-      // Update user credits in session
+      // Update credits in real-time
       if (data.remainingCredits !== undefined) {
+        setCurrentCredits(data.remainingCredits)
+        // Update session data
+        await update()
         toast.success(`${selectedModel.name} response ready! Credits remaining: ${data.remainingCredits}`)
       }
+
+      // Refresh chat history to show new/updated chat
+      fetchChatHistory()
     } catch (error) {
       toast.error("Failed to get response from AI")
     } finally {
@@ -146,7 +242,7 @@ export default function ChatPage() {
   }
 
   const requiredCredits = selectedModel.creditsPerMessage
-  const hasEnoughCredits = session.user.credits >= requiredCredits || session.user.isSubscribed
+  const hasEnoughCredits = currentCredits >= requiredCredits || session?.user?.isSubscribed
 
   const getModelColorClass = (color: string) => {
     const colorMap: Record<string, string> = {
@@ -171,7 +267,7 @@ export default function ChatPage() {
               <span>Insufficient Credits</span>
             </DialogTitle>
             <DialogDescription>
-              You need {requiredCredits} credit{requiredCredits !== 1 ? 's' : ''} to use {selectedModel.name}, but you only have {session.user.credits}.
+              You need {requiredCredits} credit{requiredCredits !== 1 ? 's' : ''} to use {selectedModel.name}, but you only have {currentCredits}.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -182,7 +278,7 @@ export default function ChatPage() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Your Credits</span>
-                <Badge variant="secondary">{session.user.credits}</Badge>
+                <Badge variant="secondary">{currentCredits}</Badge>
               </div>
               <p className="text-xs text-muted-foreground mt-2">
                 {selectedModel.name} requires {requiredCredits} credit{requiredCredits !== 1 ? 's' : ''} per message.
@@ -236,14 +332,14 @@ export default function ChatPage() {
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">Credits</span>
               <Badge 
-                variant={session.user.credits > 10 ? "secondary" : "destructive"}
-                className={session.user.credits > 10 ? "" : "animate-pulse"}
+                variant={currentCredits > 10 ? "secondary" : "destructive"}
+                className={currentCredits > 10 ? "" : "animate-pulse"}
               >
-                {session.user.credits}
+                {currentCredits}
               </Badge>
             </div>
             
-            {session.user.isSubscribed && (
+            {session?.user?.isSubscribed && (
               <Badge variant="default" className="w-full justify-center">
                 PRO - Unlimited
               </Badge>
@@ -262,11 +358,61 @@ export default function ChatPage() {
               </p>
             </div>
             
-            {session.user.credits <= 5 && session.user.credits > 0 && (
+            {currentCredits <= 5 && currentCredits > 0 && (
               <div className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 p-2 rounded">
                 ⚠️ Low credits! Get more to continue chatting.
               </div>
             )}
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* Chat History */}
+        <div className="p-4">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Chat History</span>
+              {loadingHistory && <Icons.spinner className="h-4 w-4 animate-spin" />}
+            </div>
+            
+            <ScrollArea className="h-96">
+              <div className="space-y-2">
+                {chatHistory.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">No chat history yet</p>
+                ) : (
+                  chatHistory.map((chat) => (
+                    <div key={chat.id} className="group relative">
+                      <Button
+                        variant={chatId === chat.id ? "secondary" : "ghost"}
+                        className="w-full justify-start h-auto p-2 text-left pr-8"
+                        onClick={() => loadChat(chat.id)}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium truncate">
+                            {chat.title || "New Chat"}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(chat.updatedAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="opacity-0 group-hover:opacity-100 absolute right-1 top-1 h-6 w-6 p-0"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          deleteChat(chat.id)
+                        }}
+                      >
+                        ×
+                      </Button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </ScrollArea>
           </div>
         </div>
       </div>
@@ -290,7 +436,7 @@ export default function ChatPage() {
                 <div>
                   <div className="text-sm font-medium">{selectedModel.name}</div>
                   <div className="text-xs text-muted-foreground">
-                    {session.user.isSubscribed ? "Free" : `${requiredCredits} credit${requiredCredits > 1 ? 's' : ''} per message`}
+                    {session?.user?.isSubscribed ? "Free" : `${requiredCredits} credit${requiredCredits > 1 ? 's' : ''} per message`}
                   </div>
                 </div>
               </div>
@@ -300,9 +446,9 @@ export default function ChatPage() {
                 variant={hasEnoughCredits ? "outline" : "destructive"}
                 className={!hasEnoughCredits ? "animate-pulse" : ""}
               >
-                {session.user.credits} credits
+                {currentCredits} credits
               </Badge>
-              {session.user.isSubscribed && (
+              {session?.user?.isSubscribed && (
                 <Badge variant="default">PRO</Badge>
               )}
             </div>
@@ -431,12 +577,12 @@ export default function ChatPage() {
           
           <div className="flex items-center justify-between mt-2">
             <p className="text-xs text-muted-foreground">
-              {session.user.isSubscribed 
+              {session?.user?.isSubscribed 
                 ? "Unlimited chats with Pro subscription"
-                : `Using ${selectedModel.name} (${requiredCredits} credit${requiredCredits > 1 ? 's' : ''} per message). ${session.user.credits} credits remaining.`
+                : `Using ${selectedModel.name} (${requiredCredits} credit${requiredCredits > 1 ? 's' : ''} per message). ${currentCredits} credits remaining.`
               }
             </p>
-            {session.user.credits <= requiredCredits * 3 && session.user.credits > 0 && (
+            {currentCredits <= requiredCredits * 3 && currentCredits > 0 && (
               <Button 
                 variant="outline" 
                 size="sm" 
