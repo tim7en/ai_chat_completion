@@ -1,44 +1,43 @@
 # AI Chat Hub
 
-A sleek, production-ready AI chat application with paywall functionality, user authentication, and blog system built with Next.js, TypeScript, and Prisma.
+A production-ready ChatGPT-like application built with Next.js 15, TypeScript, and Tailwind CSS. Experience the power of AI with multiple models, real-time credit tracking, and a sleek user interface.
 
-## Features
+## ✨ Features
 
 ### 🤖 AI Chat Functionality
-- Real-time AI chat completions using Z-AI SDK
-- Credit-based paywall system
-- Subscription plans for unlimited access
-- Chat history and management
-- Multiple AI models support
+- **ChatGPT-like Interface**: Clean, intuitive chat interface with real-time messaging
+- **Multiple AI Models**: Support for GPT-3.5, GPT-4, Claude 3, Gemini Pro, and more
+- **Real-time Credit Usage**: Monitor your credit consumption as you chat
+- **Chat History**: Persistent chat history with load/delete functionality
+- **Markdown Support**: Rich text rendering with syntax highlighting for code
+- **Export Capabilities**: Export conversations as TXT or HTML files
 
-### 🔐 Authentication
-- NextAuth.js integration
-- Google OAuth support
-- Credentials-based authentication
-- Session management
-- Protected routes
+### 💳 Payment & Credits System
+- **Local Payment Processing**: Integrated payment system (no Stripe dependency)
+- **Credit-based Model**: Pay-per-use with different models costing different amounts
+- **Subscription Plans**: Unlimited access with Pro subscription
+- **Real-time Balance**: Live credit balance updates during conversations
+- **Flexible Pricing**: Multiple credit pack options to suit different needs
 
-### 💳 Billing & Payments
-- Credit pack purchases
-- Monthly subscriptions
-- Simulated payment processing (ready for Stripe integration)
-- User credit management
-- Upgrade prompts and paywalls
+### 🔐 Authentication & Security
+- **NextAuth.js Integration**: Secure authentication with multiple providers
+- **Google OAuth**: One-click signin with Google
+- **Session Management**: Secure session handling with automatic updates
+- **Protected Routes**: Authorization-based access control
 
-### 📝 Blog System
-- Create and manage blog posts
-- Public blog display on homepage
-- Draft and published states
-- Author attribution
-- Rich text editing capabilities
+### 🎨 Modern UI/UX
+- **Tailwind CSS**: Beautiful, responsive design
+- **shadcn/ui Components**: High-quality, accessible component library
+- **Dark Mode Support**: Automatic theme switching
+- **Mobile Optimized**: Fully responsive across all devices
+- **Loading States**: Smooth loading indicators and transitions
 
-### 🎨 UI/UX Features
-- Responsive design with Tailwind CSS
-- shadcn/ui component library
-- Dark mode support
-- Loading states and error handling
-- Intuitive navigation
-- Mobile-optimized interface
+### 🏗️ Production Ready
+- **Docker Support**: Easy deployment with Docker and Docker Compose
+- **TypeScript**: Full type safety throughout the application
+- **Testing Suite**: Comprehensive test coverage with Jest
+- **Database**: SQLite with Prisma ORM for easy setup
+- **API Design**: RESTful API with proper error handling
 
 ## Tech Stack
 
@@ -105,11 +104,10 @@ src/
 ├── app/                    # Next.js app directory
 │   ├── api/               # API routes
 │   │   ├── auth/          # Authentication endpoints
-│   │   ├── blog/          # Blog functionality
 │   │   ├── chat/          # AI chat endpoints
+│   │   ├── chats/         # Chat history management
 │   │   └── billing/       # Payment processing
 │   ├── auth/              # Authentication pages
-│   ├── blog/              # Blog pages
 │   ├── chat/              # Chat interface
 │   ├── billing/           # Billing pages
 │   ├── dashboard/         # User dashboard
@@ -148,14 +146,8 @@ The application uses the following main models:
 ### AI Chat
 - `POST /api/chat` - Send message and get AI response
 - `GET /api/chats` - Get user's chat history
+- `GET /api/chats/:id` - Get specific chat
 - `DELETE /api/chats/:id` - Delete chat
-
-### Blog
-- `GET /api/blog/public` - Get published blog posts
-- `GET /api/blog/posts` - Get user's blog posts
-- `POST /api/blog/posts` - Create new blog post
-- `PATCH /api/blog/posts/:id` - Update blog post
-- `DELETE /api/blog/posts/:id` - Delete blog post
 
 ### Billing
 - `POST /api/billing/purchase` - Purchase credits
@@ -194,11 +186,12 @@ GOOGLE_CLIENT_SECRET=your-google-client-secret
 ### Production Considerations
 
 - **Database**: For production, consider using PostgreSQL instead of SQLite
-- **Payments**: Integrate with Stripe for real payment processing
-- **File Storage**: Use cloud storage for uploaded files
+- **Payment Integration**: The app uses local payment processing - integrate with real providers as needed
+- **File Storage**: Use cloud storage for uploaded files and exports
 - **Email**: Add email service for notifications
 - **Monitoring**: Add logging and monitoring
 - **Security**: Configure proper CORS, CSRF protection, and rate limiting
+- **AI Models**: Currently configured for ChatGPT - add API keys for other providers (Gemini, Claude, etc.)
 
 ## Security Features
 
