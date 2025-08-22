@@ -16,6 +16,7 @@ import { AIModelSelector } from "@/components/ai-model-selector"
 import { aiModels, AIModel } from "@/lib/ai-models"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import ReactMarkdown from "react-markdown"
 
 interface Message {
   id: string
@@ -115,6 +116,96 @@ export default function ChatPage() {
     } catch (error) {
       toast.error("Failed to load chat")
     }
+  }
+
+  const exportChatAsText = () => {
+    if (messages.length === 0) {
+      toast.error("No messages to export")
+      return
+    }
+
+    const chatContent = messages.map(msg => {
+      const timestamp = new Date(msg.timestamp).toLocaleString()
+      const sender = msg.role === 'user' ? 'You' : selectedModel.name
+      return `[${timestamp}] ${sender}:\n${msg.content}\n`
+    }).join('\n')
+
+    const blob = new Blob([
+      `AI Chat Hub - Conversation Export\n` +
+      `=================================\n\n` +
+      `Model: ${selectedModel.name}\n` +
+      `Date: ${new Date().toLocaleString()}\n` +
+      `Messages: ${messages.length}\n\n` +
+      chatContent
+    ], { type: 'text/plain' })
+
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `chat-${new Date().toISOString().split('T')[0]}.txt`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    
+    toast.success("Chat exported as text file")
+  }
+
+  const exportChatAsHTML = () => {
+    if (messages.length === 0) {
+      toast.error("No messages to export")
+      return
+    }
+
+    const htmlContent = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat Export</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6; }
+        .header { border-bottom: 2px solid #e5e7eb; padding-bottom: 20px; margin-bottom: 20px; }
+        .message { margin-bottom: 20px; padding: 15px; border-radius: 8px; }
+        .user { background-color: #dbeafe; margin-left: 50px; }
+        .assistant { background-color: #f3f4f6; margin-right: 50px; }
+        .sender { font-weight: bold; margin-bottom: 5px; color: #374151; }
+        .timestamp { font-size: 0.875rem; color: #6b7280; }
+        .content { white-space: pre-wrap; }
+        code { background-color: #f9fafb; padding: 2px 4px; border-radius: 4px; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>AI Chat Hub - Conversation Export</h1>
+        <p><strong>Model:</strong> ${selectedModel.name}</p>
+        <p><strong>Export Date:</strong> ${new Date().toLocaleString()}</p>
+        <p><strong>Messages:</strong> ${messages.length}</p>
+    </div>
+    <div class="conversation">
+        ${messages.map(msg => `
+            <div class="message ${msg.role}">
+                <div class="sender">${msg.role === 'user' ? 'You' : selectedModel.name}</div>
+                <div class="timestamp">${new Date(msg.timestamp).toLocaleString()}</div>
+                <div class="content">${msg.content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+            </div>
+        `).join('')}
+    </div>
+</body>
+</html>`
+
+    const blob = new Blob([htmlContent], { type: 'text/html' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `chat-${new Date().toISOString().split('T')[0]}.html`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    
+    toast.success("Chat exported as HTML file")
   }
 
   const deleteChat = async (chatIdToDelete: string) => {
@@ -314,6 +405,23 @@ export default function ChatPage() {
             New Chat
           </Button>
           
+          {/* Export Options */}
+          {messages.length > 0 && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Export Chat</label>
+              <div className="grid grid-cols-2 gap-2">
+                <Button onClick={exportChatAsText} variant="outline" size="sm">
+                  <Icons.user className="mr-1 h-3 w-3" />
+                  TXT
+                </Button>
+                <Button onClick={exportChatAsHTML} variant="outline" size="sm">
+                  <Icons.user className="mr-1 h-3 w-3" />
+                  HTML
+                </Button>
+              </div>
+            </div>
+          )}
+          
           {/* Model Selector */}
           <div className="space-y-2">
             <label className="text-sm font-medium">AI Model</label>
@@ -420,37 +528,39 @@ export default function ChatPage() {
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col">
         {/* Header */}
-        <div className="border-b p-4">
+        <div className="border-b p-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <h1 className="text-xl font-semibold">AI Chat</h1>
-              <div className="flex items-center space-x-2">
-                <Avatar className="h-6 w-6">
-                  <AvatarFallback className={cn(
-                    "text-xs font-medium",
-                    getModelColorClass(selectedModel.color)
-                  )}>
-                    {selectedModel.name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <div className="text-sm font-medium">{selectedModel.name}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {session?.user?.isSubscribed ? "Free" : `${requiredCredits} credit${requiredCredits > 1 ? 's' : ''} per message`}
-                  </div>
+              <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary/70 rounded-lg flex items-center justify-center">
+                <Icons.user className="h-4 w-4 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-lg font-semibold">AI Chat Hub</h1>
+                <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                  <span>Powered by {selectedModel.name}</span>
+                  <span>•</span>
+                  <span>{session?.user?.isSubscribed ? "Unlimited" : `${selectedModel.creditsPerMessage} credit${selectedModel.creditsPerMessage > 1 ? 's' : ''}/msg`}</span>
                 </div>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-3">
+              <div className="text-right">
+                <div className="text-sm font-medium">
+                  {currentCredits} {currentCredits === 1 ? 'credit' : 'credits'}
+                </div>
+                {session?.user?.isSubscribed && (
+                  <Badge variant="default" className="text-xs">PRO</Badge>
+                )}
+              </div>
               <Badge 
                 variant={hasEnoughCredits ? "outline" : "destructive"}
-                className={!hasEnoughCredits ? "animate-pulse" : ""}
+                className={cn(
+                  "px-3 py-1",
+                  !hasEnoughCredits && "animate-pulse"
+                )}
               >
-                {currentCredits} credits
+                {hasEnoughCredits ? "Ready" : "Low Credits"}
               </Badge>
-              {session?.user?.isSubscribed && (
-                <Badge variant="default">PRO</Badge>
-              )}
             </div>
           </div>
         </div>
@@ -459,16 +569,31 @@ export default function ChatPage() {
         <ScrollArea className="flex-1 p-4">
           <div className="space-y-4">
             {messages.length === 0 && (
-              <div className="text-center py-8">
-                <Icons.user className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-lg font-semibold mb-2">Welcome to AI Chat</h3>
-                <p className="text-muted-foreground mb-4">
-                  Start a conversation with {selectedModel.name}. Each message costs {selectedModel.creditsPerMessage} credit{selectedModel.creditsPerMessage !== 1 ? 's' : ''}.
+              <div className="text-center py-12">
+                <div className="w-16 h-16 mx-auto mb-6 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center">
+                  <Icons.user className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="text-2xl font-semibold mb-3">Welcome to AI Chat Hub</h3>
+                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                  Start a conversation with {selectedModel.name}. Ask questions, get help with coding, writing, or anything else.
                 </p>
-                <div className="bg-blue-50 dark:bg-blue-950/50 p-4 rounded-lg inline-block">
-                  <p className="text-sm text-blue-800 dark:text-blue-200">
-                    🎉 New users get 50 free credits!
-                  </p>
+                <div className="grid gap-3 max-w-lg mx-auto">
+                  <div className="bg-blue-50 dark:bg-blue-950/30 p-4 rounded-lg">
+                    <p className="text-sm text-blue-800 dark:text-blue-200 font-medium mb-1">
+                      💰 Credit System
+                    </p>
+                    <p className="text-xs text-blue-700 dark:text-blue-300">
+                      {selectedModel.name} costs {selectedModel.creditsPerMessage} credit{selectedModel.creditsPerMessage !== 1 ? 's' : ''} per message. You have {currentCredits} credits.
+                    </p>
+                  </div>
+                  <div className="bg-green-50 dark:bg-green-950/30 p-4 rounded-lg">
+                    <p className="text-sm text-green-800 dark:text-green-200 font-medium mb-1">
+                      🚀 Multiple AI Models
+                    </p>
+                    <p className="text-xs text-green-700 dark:text-green-300">
+                      Choose from GPT-3.5, GPT-4, Claude, Gemini Pro and more based on your needs.
+                    </p>
+                  </div>
                 </div>
               </div>
             )}
@@ -505,7 +630,35 @@ export default function ChatPage() {
                       </div>
                     </CardHeader>
                     <CardContent className="pt-0">
-                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                      {message.role === "assistant" ? (
+                        <div className="prose prose-sm dark:prose-invert max-w-none">
+                          <ReactMarkdown
+                            components={{
+                              code: ({ node, inline, className, children, ...props }) => {
+                                const match = /language-(\w+)/.exec(className || '')
+                                return !inline && match ? (
+                                  <div className="bg-muted p-3 rounded-md overflow-x-auto">
+                                    <code className={className} {...props}>
+                                      {children}
+                                    </code>
+                                  </div>
+                                ) : (
+                                  <code className="bg-muted px-1 py-0.5 rounded text-sm" {...props}>
+                                    {children}
+                                  </code>
+                                )
+                              },
+                              p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                              ul: ({ children }) => <ul className="mb-2 pl-4">{children}</ul>,
+                              ol: ({ children }) => <ol className="mb-2 pl-4">{children}</ol>,
+                            }}
+                          >
+                            {message.content}
+                          </ReactMarkdown>
+                        </div>
+                      ) : (
+                        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                      )}
                     </CardContent>
                   </Card>
                 </div>
@@ -557,19 +710,30 @@ export default function ChatPage() {
               </CardContent>
             </Card>
           ) : (
-            <form onSubmit={handleSubmit} className="flex space-x-2">
+            <form onSubmit={handleSubmit} className="relative">
               <Input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Type your message..."
+                placeholder={`Message ${selectedModel.name}...`}
                 disabled={isLoading}
-                className="flex-1"
+                className="pr-12 py-3 text-base"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    handleSubmit(e)
+                  }
+                }}
               />
-              <Button type="submit" disabled={isLoading || !input.trim()}>
+              <Button 
+                type="submit" 
+                disabled={isLoading || !input.trim()}
+                size="sm"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
+              >
                 {isLoading ? (
                   <Icons.spinner className="h-4 w-4 animate-spin" />
                 ) : (
-                  "Send"
+                  <Icons.user className="h-4 w-4" />
                 )}
               </Button>
             </form>
