@@ -69,7 +69,7 @@ export function Navbar() {
                       <Link href="/dashboard">Dashboard</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/blog">My Blog</Link>
+                      <Link href="/chat">Chat</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link href="/billing">Billing</Link>

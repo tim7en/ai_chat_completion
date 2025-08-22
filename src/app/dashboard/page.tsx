@@ -16,7 +16,6 @@ export default function DashboardPage() {
   const router = useRouter()
   const [userStats, setUserStats] = useState({
     totalChats: 0,
-    totalPosts: 0,
     creditsUsed: 0,
   })
 
@@ -31,7 +30,6 @@ export default function DashboardPage() {
       // Fetch user stats (mock data for now)
       setUserStats({
         totalChats: 5,
-        totalPosts: 2,
         creditsUsed: 15,
       })
     }
@@ -82,7 +80,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Chats</CardTitle>
@@ -90,15 +88,6 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{userStats.totalChats}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Blog Posts</CardTitle>
-              <Icons.user className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{userStats.totalPosts}</div>
             </CardContent>
           </Card>
           <Card>
@@ -133,7 +122,7 @@ export default function DashboardPage() {
             <CardContent>
               <div className="flex flex-col space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Each chat consumes 1 credit. You have {session.user.credits} credits remaining.
+                  Each chat consumes credits based on the model used. You have {session.user.credits} credits remaining.
                 </p>
                 <Link href="/chat">
                   <Button className="w-full">
@@ -146,19 +135,19 @@ export default function DashboardPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Write Blog Post</CardTitle>
+              <CardTitle>Get More Credits</CardTitle>
               <CardDescription>
-                Share your thoughts with the community
+                Purchase additional credits for AI conversations
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex flex-col space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Create and publish blog posts that will appear on the main page.
+                  Buy credit packs or upgrade to a subscription for unlimited access.
                 </p>
-                <Link href="/blog/new">
+                <Link href="/billing">
                   <Button className="w-full" variant="outline">
-                    Write Post
+                    Buy Credits
                   </Button>
                 </Link>
               </div>

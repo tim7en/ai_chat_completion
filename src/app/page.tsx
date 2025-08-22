@@ -3,49 +3,10 @@
 import { Navbar } from "@/components/navbar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Icons } from "@/components/ui/icons"
 import Link from "next/link"
-import { CalendarDays } from "lucide-react"
-import { useEffect, useState } from "react"
-
-interface BlogPost {
-  id: string
-  title: string
-  content: string
-  published: boolean
-  createdAt: string
-  updatedAt: string
-  author: {
-    name: string
-    email: string
-    image?: string
-  }
-}
 
 export default function Home() {
-  const [posts, setPosts] = useState<BlogPost[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    fetchPosts()
-  }, [])
-
-  const fetchPosts = async () => {
-    try {
-      const response = await fetch("/api/blog/public")
-      if (response.ok) {
-        const data = await response.json()
-        setPosts(data.posts || [])
-      }
-    } catch (error) {
-      console.error("Failed to fetch posts:", error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -125,71 +86,46 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Blog Section */}
+      {/* Real-time Features Section */}
       <section className="py-16 px-4">
         <div className="container mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Latest from Our Blog</h2>
+            <h2 className="text-3xl font-bold mb-4">Powerful Chat Features</h2>
             <p className="text-muted-foreground">
-              Stay updated with the latest trends and insights in AI technology.
+              Experience ChatGPT-like functionality with enhanced features for better productivity.
             </p>
           </div>
           
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Icons.spinner className="h-8 w-8 animate-spin" />
-            </div>
-          ) : posts.length === 0 ? (
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
             <Card>
-              <CardContent className="py-12 text-center">
-                <Icons.user className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-lg font-semibold mb-2">No blog posts yet</h3>
-                <p className="text-muted-foreground">
-                  Check back soon for exciting content about AI and technology!
-                </p>
-              </CardContent>
+              <CardHeader>
+                <Icons.user className="h-12 w-12 text-primary mb-4" />
+                <CardTitle>Real-time Fund Usage</CardTitle>
+                <CardDescription>
+                  Monitor your credit usage in real-time as you chat with AI models.
+                </CardDescription>
+              </CardHeader>
             </Card>
-          ) : (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {posts.map((post) => (
-                <Card key={post.id} className="hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <div className="flex items-center space-x-2 mb-2">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={post.author.image || ""} alt={post.author.name} />
-                        <AvatarFallback>
-                          {post.author.name.charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">{post.author.name}</p>
-                        <div className="flex items-center text-xs text-muted-foreground">
-                          <CalendarDays className="h-3 w-3 mr-1" />
-                          {new Date(post.createdAt).toLocaleDateString()}
-                        </div>
-                      </div>
-                    </div>
-                    <CardTitle className="text-lg">{post.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
-                      {post.content}
-                    </p>
-                    <Button variant="outline" size="sm" className="w-full">
-                      Read More
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-          
-          <div className="text-center mt-8">
-            <Link href="/blog">
-              <Button variant="outline">
-                View All Posts
-              </Button>
-            </Link>
+            
+            <Card>
+              <CardHeader>
+                <Icons.user className="h-12 w-12 text-primary mb-4" />
+                <CardTitle>Chat History</CardTitle>
+                <CardDescription>
+                  All your conversations are saved and easily accessible for future reference.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <Icons.user className="h-12 w-12 text-primary mb-4" />
+                <CardTitle>Document Generation</CardTitle>
+                <CardDescription>
+                  Generate documents and PDFs from your conversations with proper formatting.
+                </CardDescription>
+              </CardHeader>
+            </Card>
           </div>
         </div>
       </section>
